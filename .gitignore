@@ -1,1 +1,2 @@
-review-api/node_modules/*
+lambda-functions/review-api/node_modules/*
+lambda-functions/linguistic-analysis js/node_modules/*

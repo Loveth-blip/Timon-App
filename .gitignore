@@ -1,2 +1,3 @@
 lambda-functions/review-api/node_modules/*
 lambda-functions/linguistic-analysis js/node_modules/*
+timon-api/node_modules/*

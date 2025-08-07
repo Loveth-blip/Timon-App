@@ -14,12 +14,7 @@ const userSchema = mongoose.Schema({
     type: String,
     require: [true, "Please tell us your last name"],
   },
-  userName: {
-    type: String,
-    require: [true, "Please create a username"],
-    unique: true,
-    uppercase: true,
-  },
+
   email: {
     type: String,
     require: [true, "Please provide your email"],

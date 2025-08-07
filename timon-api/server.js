@@ -27,6 +27,7 @@ mongoose
 const port = process.env.PORT || 3000;
 const server = app.listen(port, () => {
   console.log(`Listening on port ${chalk.green(port)}`);
+  console.log(`${chalk.green("http://localhost:" + port)}`);
 });
 
 process.on("unhandledRejection", (err) => {

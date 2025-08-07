@@ -6,6 +6,10 @@ import userRouter from "./routes/userRoutes.js";
 
 const app = express();
 
+// Middleware
+app.use(express.json({ limit: "10kb" }));
+app.use(express.urlencoded({ extended: true, limit: "10kb" }));
+
 // ROUTES
 
 app.use("/api/v1/user", userRouter);

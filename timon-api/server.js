@@ -14,17 +14,15 @@ process.on("uncaughtException", (err) => {
   process.exit(1);
 });
 
-
 const dbUrl = process.env.MONGODB_URI;
 
 mongoose
-  .connect(dbUrl, {
-    useNewUrlParser: true,
-    useCreateIndex: true,
-    useFindAndModify: false,
-    useUnifiedTopology: true,
-  })
-  .then(() => console.log(`DB connection ${chalk.green("successful")}`));
+  .connect(dbUrl)
+  .then(() => console.log(`DB connection ${chalk.green("successful")}`))
+  .catch((err) => {
+    console.log(`DB connection ${chalk.red("failed")}`);
+    console.log(err.message);
+  });
 
 const port = process.env.PORT || 3000;
 const server = app.listen(port, () => {

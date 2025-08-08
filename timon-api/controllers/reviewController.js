@@ -2,6 +2,8 @@ import Review from "../models/reviewModel.js";
 import Product from "../models/productModel.js";
 import catchAsync from "../utilities/catchAsync.js";
 import AppError from "../utilities/appError.js";
+import analyzeBehavioralData from "../utilities/behavioralAnalysis.js";
+import analyzeLinguistic from "../utilities/linguisticAnalysis.js";
 
 // Create a review
 export const createReview = catchAsync(async (req, res, next) => {
@@ -24,14 +26,58 @@ export const createReview = catchAsync(async (req, res, next) => {
     return next(new AppError("You have already reviewed this product", 400));
   }
 
-  // Prepare review data
+  // Perform behavioral analysis
+  let behavioralAnalysis = {
+    behavioral: "unknown",
+    behavioralScore: 0,
+    behavioralReasons: []
+  };
+
+  if (behavioralData) {
+    try {
+      const behavioralResult = analyzeBehavioralData(behavioralData);
+      behavioralAnalysis = {
+        behavioral: behavioralResult.behavioralTag,
+        behavioralScore: behavioralResult.score,
+        behavioralReasons: behavioralResult.reasons
+      };
+    } catch (error) {
+      console.error("Error in behavioral analysis:", error);
+    }
+  }
+
+  // Perform linguistic analysis
+  let linguisticAnalysis = {
+    linguistic: "unknown",
+    linguisticScore: 0,
+    finalDecision: "needs_review",
+    analysisComplete: false
+  };
+
+  try {
+    const linguisticResult = await analyzeLinguistic(reviewText, behavioralAnalysis.behavioral);
+    linguisticAnalysis = {
+      linguistic: linguisticResult.linguisticTag,
+      linguisticScore: linguisticResult.linguisticScore,
+      finalDecision: linguisticResult.finalClassification,
+      analysisComplete: true
+    };
+  } catch (error) {
+    console.error("Error in linguistic analysis:", error);
+  }
+
+  // Prepare review data with analysis tags
   const reviewData = {
     userId,
     productId,
     reviewText,
     rating,
     behavioralData: behavioralData || {},
-    behavioralDataRaw: behavioralDataRaw || {}
+    behavioralDataRaw: behavioralDataRaw || {},
+    tags: {
+      ...behavioralAnalysis,
+      ...linguisticAnalysis
+    }
   };
 
   // Create the review

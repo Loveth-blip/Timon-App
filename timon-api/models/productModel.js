@@ -26,6 +26,8 @@ const productSchema = mongoose.Schema(
         values: [
           "Electronics",
           "Wearables",
+          "Computers",
+          "Accessories",
           "Clothing",
           "Books",
           "Home & Garden",

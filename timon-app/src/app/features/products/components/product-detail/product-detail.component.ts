@@ -311,6 +311,7 @@ export class ProductDetailComponent implements OnInit {
         }),
         tap((product) => {
           this.product = product;
+          console.log(product);
           this.loading = false;
 
           // Load reviews for this product
@@ -318,8 +319,9 @@ export class ProductDetailComponent implements OnInit {
             this.reviews$ = this.firebaseService
               .getFilteredCollection<Review>('reviews', 'productId', product.id)
               .pipe(
+                tap(console.log),
                 map((reviews) => {
-                  return reviews.map((review) => ({
+                  return reviews.map((review: any) => ({
                     ...review,
                     createdAtDisplay: review.createdAt
                       ? new Date(

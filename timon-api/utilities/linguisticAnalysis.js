@@ -35,10 +35,7 @@ async function analyzeTextWithHuggingFaceAPI(text) {
     }
 
     // If we can't parse the result, return a default
-    console.log(
-      `✅‼️ Unexpected response format from Hugging Face API:`,
-      result
-    );
+
     return { label: "UNKNOWN", score: 0.5 };
   } catch (error) {
     console.log("❌✔️ Fall Back");
@@ -74,7 +71,7 @@ function fallbackTextAnalysis(text) {
 
     if (variance < 100) {
       // Low variance in sentence length suggests AI
-      return { label: "AI-GENERATED", score: 0.7 };
+      return { label: "Fake", score: 0.7 };
     }
   }
 
@@ -82,11 +79,11 @@ function fallbackTextAnalysis(text) {
   const longWords = words.filter((w) => w.length > 10);
   if (longWords.length > words.length * 0.1) {
     // More than 10% long words suggests AI
-    return { label: "AI-GENERATED", score: 0.6 };
+    return { label: "Fake", score: 0.6 };
   }
 
   // Default to human if no AI patterns detected
-  return { label: "HUMAN", score: 0.6 };
+  return { label: "Real", score: 0.6 };
 }
 
 /**
@@ -96,16 +93,13 @@ function fallbackTextAnalysis(text) {
  * @returns {"real" | "fake" | "needs_review" | "suspicious"}
  */
 function classifyReview(linguisticTag, behavioralTag) {
-  if (linguisticTag === "HUMAN" && behavioralTag === "human") {
+  if (linguisticTag === "Real" && behavioralTag === "human") {
     return "real";
-  } else if (
-    linguisticTag === "AI-GENERATED" &&
-    behavioralTag === "suspicious"
-  ) {
+  } else if (linguisticTag === "Fake" && behavioralTag === "suspicious") {
     return "fake";
-  } else if (linguisticTag === "AI-GENERATED" && behavioralTag === "human") {
+  } else if (linguisticTag === "Fake" && behavioralTag === "human") {
     return "needs_review";
-  } else if (linguisticTag === "HUMAN" && behavioralTag === "suspicious") {
+  } else if (linguisticTag === "Real" && behavioralTag === "suspicious") {
     return "suspicious";
   } else {
     // Default case if tags don't match expected values

@@ -49,7 +49,7 @@ const tagsSchema = mongoose.Schema(
   {
     linguistic: {
       type: String,
-      enum: ["Real", "Fake", "Suspicious"],
+      enum: ["Real", "Fake"],
       default: "Real",
     },
     behavioralScore: {
@@ -72,7 +72,7 @@ const tagsSchema = mongoose.Schema(
     },
     behavioral: {
       type: String,
-      enum: ["real", "suspicious", "fake"],
+      enum: ["human", "suspicious"],
       default: "real",
     },
     analysisComplete: {
@@ -81,7 +81,7 @@ const tagsSchema = mongoose.Schema(
     },
     finalDecision: {
       type: String,
-      enum: ["approved", "rejected", "needs_review"],
+      enum: ["real", "fake", "suspicious", "needs_review"],
       default: "needs_review",
     },
   },

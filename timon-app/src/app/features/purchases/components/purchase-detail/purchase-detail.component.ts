@@ -1,10 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { FirebaseService } from '../../../../services/firebase.service';
+import { ApiService, PurchaseDetailResponse } from '../../../../services/api.service';
 import { Purchase } from '../../../../models/purchase.model';
 import { Product } from '../../../../models/product.model';
-import { Observable, switchMap, tap, of, catchError, forkJoin, map } from 'rxjs';
+import { Observable, switchMap, tap, of, catchError } from 'rxjs';
 
 @Component({
   selector: 'app-purchase-detail',
@@ -24,7 +24,7 @@ import { Observable, switchMap, tap, of, catchError, forkJoin, map } from 'rxjs'
       <div *ngIf="!loading && !error && purchase && product" class="purchase-content">
         <div class="purchase-header">
           <h1>Purchase Details</h1>
-          <p class="purchase-id">Order #{{ purchase.id }}</p>
+          <p class="purchase-id">Order #{{ purchase._id || purchase.id }}</p>
         </div>
 
         <div class="purchase-summary">
@@ -34,12 +34,12 @@ import { Observable, switchMap, tap, of, catchError, forkJoin, map } from 'rxjs'
 
           <div class="purchase-info">
             <h2>{{ product.title }}</h2>
-            <p class="purchase-date">Purchased on {{ purchase.timestamp | date:'medium' }}</p>
+            <p class="purchase-date">Purchased on {{ purchase.createdAt || purchase.timestamp | date:'medium' }}</p>
             <p class="purchase-amount">{{ purchase.amount | currency }}</p>
 
             <div class="purchase-actions">
-              <a [routerLink]="['/products', product.id]" class="btn btn-secondary">View Product</a>
-              <a [routerLink]="['/reviews/create', product.id]" class="btn btn-primary">Write a Review</a>
+              <a [routerLink]="['/products', product._id || product.id]" class="btn btn-secondary">View Product</a>
+              <a [routerLink]="['/reviews/create', product._id || product.id]" class="btn btn-primary">Write a Review</a>
             </div>
           </div>
         </div>
@@ -50,7 +50,7 @@ import { Observable, switchMap, tap, of, catchError, forkJoin, map } from 'rxjs'
           <div class="details-grid">
             <div class="detail-row">
               <span class="detail-label">Order Date:</span>
-              <span class="detail-value">{{ purchase.timestamp | date:'medium' }}</span>
+              <span class="detail-value">{{ purchase.createdAt || purchase.timestamp | date:'medium' }}</span>
             </div>
             <div class="detail-row">
               <span class="detail-label">Order Total:</span>
@@ -63,6 +63,14 @@ import { Observable, switchMap, tap, of, catchError, forkJoin, map } from 'rxjs'
             <div class="detail-row">
               <span class="detail-label">Category:</span>
               <span class="detail-value">{{ product.category }}</span>
+            </div>
+            <div class="detail-row" *ngIf="purchase.status">
+              <span class="detail-label">Status:</span>
+              <span class="detail-value">{{ purchase.status | titlecase }}</span>
+            </div>
+            <div class="detail-row" *ngIf="purchase.paymentMethod">
+              <span class="detail-label">Payment Method:</span>
+              <span class="detail-value">{{ purchase.paymentMethod }}</span>
             </div>
           </div>
         </div>
@@ -272,7 +280,7 @@ export class PurchaseDetailComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private firebaseService: FirebaseService
+    private apiService: ApiService
   ) {}
 
   ngOnInit(): void {
@@ -282,19 +290,15 @@ export class PurchaseDetailComponent implements OnInit {
         if (!purchaseId) {
           throw new Error('Purchase ID is required');
         }
-        return this.firebaseService.getDocument<Purchase>('purchases', purchaseId);
+        return this.apiService.getPurchaseWithProduct(purchaseId);
       }),
-      switchMap(purchase => {
-        this.purchase = purchase;
-
-        if (!purchase || !purchase.productId) {
-          throw new Error('Invalid purchase data');
+      tap((response: PurchaseDetailResponse) => {
+        if (response.data.purchase && response.data.product) {
+          this.purchase = response.data.purchase;
+          this.product = response.data.product;
+        } else {
+          throw new Error('Purchase or product data not found');
         }
-
-        return this.firebaseService.getDocument<Product>('products', purchase.productId);
-      }),
-      tap(product => {
-        this.product = product;
         this.loading = false;
       }),
       catchError(error => {

@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { FirebaseService } from '../../../../services/firebase.service';
+import { ApiService } from '../../../../services/api.service';
 import { Product } from '../../../../models/product.model';
 import { Purchase } from '../../../../models/purchase.model';
 import { Observable, Subscription } from 'rxjs';
@@ -468,7 +468,7 @@ export class CheckoutComponent implements OnInit {
     private fb: FormBuilder,
     private route: ActivatedRoute,
     private router: Router,
-    private firebaseService: FirebaseService
+    private apiService: ApiService
   ) {
     this.checkoutForm = this.fb.group({
       cardName: ['', Validators.required],
@@ -491,10 +491,10 @@ export class CheckoutComponent implements OnInit {
       return;
     }
 
-    this.productSubscription = this.firebaseService.getDocument<Product>('products', productId)
+    this.productSubscription = this.apiService.getProduct(productId)
       .subscribe({
-        next: (product) => {
-          this.product = product;
+        next: (response) => {
+          this.product = response.data.product!;
           this.loading = false;
         },
         error: (error) => {
@@ -517,21 +517,25 @@ export class CheckoutComponent implements OnInit {
     this.submitting = true;
     this.submitError = '';
 
-    // In a real app, this would call a payment processing service
-    // For demo purposes, we'll just create a purchase record
-
     const userId = 'user123'; // In a real app, get this from auth service
-    const purchase: Purchase = {
+    const purchaseData = {
       userId,
-      productId: this.product.id!,
-      timestamp: new Date(),
-      amount: this.product.price * 1.1 // Including tax
+      productId: this.product.id || this.product._id!,
+      amount: this.product.price * 1.1, // Including tax
+      paymentMethod: 'Credit Card',
+      shippingAddress: {
+        street: '123 Demo Street',
+        city: 'Demo City',
+        state: 'Demo State',
+        zipCode: '12345',
+        country: 'Demo Country'
+      }
     };
 
     // Simulate payment processing delay
     setTimeout(() => {
-      this.firebaseService.addDocument<Purchase>('purchases', purchase).subscribe({
-        next: () => {
+      this.apiService.createPurchase(purchaseData).subscribe({
+        next: (response) => {
           this.submitting = false;
           this.router.navigate(['/purchases']);
         },
@@ -545,8 +549,8 @@ export class CheckoutComponent implements OnInit {
   }
 
   goBack(): void {
-    if (this.product && this.product.id) {
-      this.router.navigate(['/products', this.product.id]);
+    if (this.product && (this.product.id || this.product._id)) {
+      this.router.navigate(['/products', this.product.id || this.product._id]);
     } else {
       this.router.navigate(['/products']);
     }

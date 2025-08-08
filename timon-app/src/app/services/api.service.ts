@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Product } from '../models/product.model';
 import { Review, ReviewData } from '../models/review.model';
+import { Purchase } from '../models/purchase.model';
 
 export interface ApiResponse<T> {
   status: string;
@@ -13,6 +14,39 @@ export interface ApiResponse<T> {
     reviews?: T[];
     review?: T;
     user?: T;
+    purchases?: T[];
+    purchase?: T;
+  };
+}
+
+export interface PurchaseWithProductResponse {
+  status: string;
+  results?: number;
+  data: {
+    purchases?: (Purchase & { product?: Product })[];
+    purchase?: Purchase;
+    product?: Product;
+  };
+}
+
+export interface PurchaseWithProductData {
+  purchase: Purchase;
+  product: Product;
+}
+
+export interface PurchaseListResponse {
+  status: string;
+  results?: number;
+  data: {
+    purchases: (Purchase & { product?: Product })[];
+  };
+}
+
+export interface PurchaseDetailResponse {
+  status: string;
+  data: {
+    purchase: Purchase;
+    product: Product;
   };
 }
 
@@ -42,6 +76,20 @@ export interface SignupData {
   lastName: string;
   email: string;
   password: string;
+}
+
+export interface PurchaseData {
+  userId: string;
+  productId: string;
+  amount: number;
+  paymentMethod: string;
+  shippingAddress: {
+    street: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    country: string;
+  };
 }
 
 @Injectable({
@@ -180,5 +228,51 @@ export class ApiService {
       `${this.baseUrl}/review/${id}/analysis`,
       { analysisData }
     );
+  }
+
+  // Purchase endpoints
+  createPurchase(purchaseData: PurchaseData): Observable<ApiResponse<Purchase>> {
+    return this.http.post<ApiResponse<Purchase>>(
+      `${this.baseUrl}/purchase`,
+      purchaseData
+    );
+  }
+
+  getPurchases(): Observable<ApiResponse<Purchase>> {
+    return this.http.get<ApiResponse<Purchase>>(`${this.baseUrl}/purchase`);
+  }
+
+  getUserPurchases(userId: string): Observable<ApiResponse<Purchase>> {
+    return this.http.get<ApiResponse<Purchase>>(
+      `${this.baseUrl}/purchase/user/${userId}`
+    );
+  }
+
+  getUserPurchasesWithProducts(userId: string): Observable<PurchaseListResponse> {
+    return this.http.get<PurchaseListResponse>(
+      `${this.baseUrl}/purchase/user/${userId}/with-products`
+    );
+  }
+
+  getPurchase(id: string): Observable<ApiResponse<Purchase>> {
+    return this.http.get<ApiResponse<Purchase>>(`${this.baseUrl}/purchase/${id}`);
+  }
+
+  getPurchaseWithProduct(id: string): Observable<PurchaseDetailResponse> {
+    return this.http.get<PurchaseDetailResponse>(`${this.baseUrl}/purchase/${id}/with-product`);
+  }
+
+  updatePurchase(
+    id: string,
+    purchaseData: Partial<PurchaseData>
+  ): Observable<ApiResponse<Purchase>> {
+    return this.http.patch<ApiResponse<Purchase>>(
+      `${this.baseUrl}/purchase/${id}`,
+      purchaseData
+    );
+  }
+
+  deletePurchase(id: string): Observable<ApiResponse<void>> {
+    return this.http.delete<ApiResponse<void>>(`${this.baseUrl}/purchase/${id}`);
   }
 }

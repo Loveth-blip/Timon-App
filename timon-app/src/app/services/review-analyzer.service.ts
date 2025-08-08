@@ -2,7 +2,6 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
-import { FirebaseService } from './firebase.service';
 import { BehavioralBiometricsService } from './behavioral-biometrics.service';
 import {
   BehavioralData,
@@ -21,7 +20,6 @@ export class ReviewAnalyzerService {
 
   constructor(
     private http: HttpClient,
-    private firebaseService: FirebaseService,
     private behavioralService: BehavioralBiometricsService
   ) {}
 
@@ -37,12 +35,6 @@ export class ReviewAnalyzerService {
         } else {
           throw new Error(response.message || 'Failed to submit review');
         }
-      }),
-      catchError((error) => {
-        console.error('Error submitting review:', error);
-
-        // Fallback to local processing if the API call fails
-        return this.processReviewLocally(payload);
       })
     );
   }
@@ -83,70 +75,6 @@ export class ReviewAnalyzerService {
   }
 
   /**
-   * Fallback method to process the review locally if the API call fails
-   */
-  private processReviewLocally(reviewData: ReviewData): Observable<string> {
-    const {
-      userId,
-      productId,
-      reviewText,
-      behavioralDataRaw,
-      behavioralData,
-      rating,
-    } = reviewData;
-    // Initial tags with pending status
-    const initialTags: ReviewTags = {
-      behavioral: 'pending',
-      linguistic: 'pending',
-      finalDecision: 'pending',
-    };
-
-    // Create the review object
-    const review: Review = {
-      userId,
-      productId,
-      reviewText,
-      // createdAt: new Date(),
-      tags: initialTags,
-      rating,
-      behavioralData,
-    };
-
-    // Save the review to Firestore
-    return this.firebaseService.addDocument<Review>('reviews', review).pipe(
-      map((docRef) => {
-        const reviewId = docRef.id;
-
-        // Perform behavioral analysis locally
-        const behavioralTag =
-          this.behavioralService.analyzeBehavior(behavioralDataRaw as BehavioralData);
-
-        // Set a default linguistic tag (since we can't perform linguistic analysis locally)
-        const linguisticTag = 'human';
-
-        // Update the review with analysis results
-        const updatedTags: ReviewTags = {
-          behavioral: behavioralTag,
-          linguistic: linguisticTag as any,
-          finalDecision: this.makeLocalDecision(
-            behavioralTag,
-            linguisticTag as any
-          ),
-        };
-
-        // Update the review in Firestore
-        this.firebaseService
-          .updateDocument<Review>('reviews', reviewId, {
-            tags: updatedTags,
-          })
-          .subscribe();
-
-        return reviewId;
-      })
-    );
-  }
-
-  /**
    * Apply decision tree logic for local processing
    */
   private makeLocalDecision(
@@ -159,40 +87,6 @@ export class ReviewAnalyzerService {
     } else {
       return 'suspicious';
     }
-  }
-
-  /**
-   * Get reviews for a specific product
-   */
-  getProductReviews(productId: string): Observable<Review[]> {
-    return this.firebaseService.getFilteredCollection<Review>(
-      'reviews',
-      'productId',
-      productId
-    );
-  }
-
-  /**
-   * Get reviews by a specific user
-   */
-  getUserReviews(userId: string): Observable<Review[]> {
-    return this.firebaseService.getFilteredCollection<Review>(
-      'reviews',
-      'userId',
-      userId
-    );
-  }
-
-  /**
-   * Manually update the review classification
-   */
-  updateReviewClassification(
-    reviewId: string,
-    finalDecision: 'flagged' | 'real' | 'fake' | 'confirmed'
-  ): Observable<void> {
-    return this.firebaseService.updateDocument<Review>('reviews', reviewId, {
-      tags: { finalDecision } as any,
-    });
   }
 
   /**

@@ -28,25 +28,7 @@ export class ReviewAnalyzerService {
   /**
    * Submit a new review with behavioral data and analyze it using AWS Lambda
    */
-  submitReview(
-    userId: string,
-    productId: string,
-    reviewText: string,
-    behavioralData: BehavioralData
-  ): Observable<string> {
-    // Format the behavioral data for the API
-    const formattedBehavioralData = this.formatBehavioralData(behavioralData);
-
-    // Prepare the request payload
-    const payload: ReviewData = {
-      userId,
-      productId,
-      reviewText,
-      behavioralDataRaw: behavioralData,
-      behavioralData: formattedBehavioralData,
-      rating: 5, // Default rating if not provided
-    };
-
+  submitReview(payload: ReviewData): Observable<string> {
     // Call the AWS Lambda function
     return this.http.post<any>(`${this.apiUrl}/reviews`, payload).pipe(
       map((response) => {
@@ -68,7 +50,7 @@ export class ReviewAnalyzerService {
   /**
    * Format behavioral data for the API
    */
-  private formatBehavioralData(data: BehavioralData): BehavioralDataProcessed {
+  formatBehavioralData(data: BehavioralData): BehavioralDataProcessed {
     // Calculate typing rhythm metrics
     const typingRhythm = {
       naturalPauses: data.idleTimes.length,
@@ -137,7 +119,7 @@ export class ReviewAnalyzerService {
 
         // Perform behavioral analysis locally
         const behavioralTag =
-          this.behavioralService.analyzeBehavior(behavioralDataRaw);
+          this.behavioralService.analyzeBehavior(behavioralDataRaw as BehavioralData);
 
         // Set a default linguistic tag (since we can't perform linguistic analysis locally)
         const linguisticTag = 'human';
@@ -168,14 +150,14 @@ export class ReviewAnalyzerService {
    * Apply decision tree logic for local processing
    */
   private makeLocalDecision(
-    behavioralTag: 'real' | 'fake',
-    linguisticTag: 'AI' | 'human'
-  ): 'flagged' | 'real' | 'fake' | 'confirmed' {
+    behavioralTag: 'human' | 'suspicious' | 'pending',
+    linguisticTag: 'Real' | 'Fake' | 'pending'
+  ): 'suspicious' | 'real' | 'fake' | 'needs_review' | 'pending' {
     // Simplified decision logic for local processing
-    if (behavioralTag === 'real') {
+    if (behavioralTag === 'human' && linguisticTag === 'Real') {
       return 'real';
     } else {
-      return 'flagged';
+      return 'suspicious';
     }
   }
 

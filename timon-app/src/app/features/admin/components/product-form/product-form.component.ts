@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { FirebaseService } from '../../../../services/firebase.service';
+import { ApiService } from '../../../../services/api.service';
 import { Product } from '../../../../models/product.model';
 import { Observable, of } from 'rxjs';
 import { catchError, switchMap, tap } from 'rxjs/operators';
@@ -75,6 +75,21 @@ import { catchError, switchMap, tap } from 'rxjs/operators';
           <div *ngIf="price?.invalid && (price?.dirty || price?.touched)" class="error-message">
             <div *ngIf="price?.errors?.['required']">Price is required</div>
             <div *ngIf="price?.errors?.['min']">Price must be greater than or equal to 0</div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="stock">Stock</label>
+          <input
+            type="number"
+            id="stock"
+            formControlName="stock"
+            class="form-control"
+            placeholder="Enter stock quantity"
+            min="0"
+          >
+          <div *ngIf="stock?.invalid && (stock?.dirty || stock?.touched)" class="error-message">
+            <div *ngIf="stock?.errors?.['min']">Stock must be greater than or equal to 0</div>
           </div>
         </div>
 
@@ -437,12 +452,13 @@ export class ProductFormComponent implements OnInit {
     private fb: FormBuilder,
     private route: ActivatedRoute,
     private router: Router,
-    private firebaseService: FirebaseService
+    private apiService: ApiService
   ) {
     this.productForm = this.fb.group({
       title: ['', Validators.required],
       category: ['', Validators.required],
       price: [0, [Validators.required, Validators.min(0)]],
+      stock: [0, [Validators.min(0)]],
       imageUrl: ['', [Validators.required, Validators.pattern(/^(http|https):\/\/[^ "]+$/)]],
       description: ['', Validators.required]
     });
@@ -451,6 +467,7 @@ export class ProductFormComponent implements OnInit {
   get title() { return this.productForm.get('title'); }
   get category() { return this.productForm.get('category'); }
   get price() { return this.productForm.get('price'); }
+  get stock() { return this.productForm.get('stock'); }
   get imageUrl() { return this.productForm.get('imageUrl'); }
   get description() { return this.productForm.get('description'); }
 
@@ -462,16 +479,18 @@ export class ProductFormComponent implements OnInit {
           this.isEditMode = true;
           this.productId = id;
           this.loading = true;
-          return this.firebaseService.getDocument<Product>('products', id);
+          return this.apiService.getProduct(id);
         }
         return of(null);
       }),
-      tap(product => {
-        if (product) {
+      tap(response => {
+        if (response && response.data.product) {
+          const product = response.data.product;
           this.productForm.patchValue({
             title: product.title,
             category: product.category,
             price: product.price,
+            stock: product.stock || 0,
             imageUrl: product.imageUrl,
             description: product.description
           });
@@ -524,26 +543,18 @@ export class ProductFormComponent implements OnInit {
     this.uploadProgress = 0;
     this.uploadError = '';
 
-    // Create a unique filename
-    const timestamp = new Date().getTime();
-    const filename = `products/${timestamp}_${this.selectedFile.name}`;
+    // For now, we'll simulate file upload since we don't have Firebase storage
+    // In a real implementation, you would upload to your backend
+    setTimeout(() => {
+      this.uploadedImageUrl = 'https://via.placeholder.com/400x300?text=Uploaded+Image';
+      this.isUploading = false;
+      this.uploadProgress = 100;
 
-    this.firebaseService.uploadFile(filename, this.selectedFile).subscribe({
-      next: (downloadUrl) => {
-        this.uploadedImageUrl = downloadUrl;
-        this.isUploading = false;
-
-        // Update the form with the new image URL
-        this.productForm.patchValue({
-          imageUrl: downloadUrl
-        });
-      },
-      error: (error) => {
-        this.isUploading = false;
-        this.uploadError = 'Failed to upload image. Please try again.';
-        console.error('Error uploading image:', error);
-      }
-    });
+      // Update the form with the new image URL
+      this.productForm.patchValue({
+        imageUrl: this.uploadedImageUrl
+      });
+    }, 2000);
   }
 
   onSubmit(): void {
@@ -552,17 +563,18 @@ export class ProductFormComponent implements OnInit {
     this.submitting = true;
     this.submitError = '';
 
-    const product: Product = {
+    const product: Omit<Product, 'id' | '_id'> = {
       title: this.title?.value,
       category: this.category?.value,
       price: this.price?.value,
+      stock: this.stock?.value || 0,
       imageUrl: this.imageUrl?.value,
       description: this.description?.value
     };
 
     if (this.isEditMode && this.productId) {
       // Update existing product
-      this.firebaseService.updateDocument<Product>('products', this.productId, product).subscribe({
+      this.apiService.updateProduct(this.productId, product).subscribe({
         next: () => {
           this.submitting = false;
           this.router.navigate(['/admin/products']);
@@ -575,7 +587,7 @@ export class ProductFormComponent implements OnInit {
       });
     } else {
       // Add new product
-      this.firebaseService.addDocument<Product>('products', product).subscribe({
+      this.apiService.createProduct(product).subscribe({
         next: () => {
           this.submitting = false;
           this.router.navigate(['/admin/products']);

@@ -1,4 +1,5 @@
 import express from "express";
+import cors from "cors";
 
 import AppError from "./utilities/appError.js";
 import globalErrorHandler from "./controllers/errorController.js";
@@ -9,6 +10,7 @@ import reviewRouter from "./routes/reviewRoutes.js";
 const app = express();
 
 // Middleware
+app.use(cors())
 app.use(express.json({ limit: "10kb" }));
 app.use(express.urlencoded({ extended: true, limit: "10kb" }));
 

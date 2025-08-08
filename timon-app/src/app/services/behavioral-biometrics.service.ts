@@ -114,7 +114,7 @@ export class BehavioralBiometricsService {
   };
 
   // Helper method to analyze the behavioral data and determine if it's suspicious
-  analyzeBehavior(data: BehavioralData): 'real' | 'fake' {
+  analyzeBehavior(data: BehavioralData): 'human' | 'suspicious' | 'pending' {
     // Simple heuristic rules for behavioral analysis
     // These thresholds would need to be tuned based on real-world data
 
@@ -124,20 +124,20 @@ export class BehavioralBiometricsService {
       data.backspaceCount === 0 &&
       data.pasteCount > 0
     ) {
-      return 'fake';
+      return 'suspicious';
     }
 
     // Very consistent typing speed with no pauses => Likely fake
     if (data.idleTimes.length === 0 && data.typingDuration > 5000) {
-      return 'fake';
+      return 'suspicious';
     }
 
     // Natural typing speed + corrections + mouse movements => Likely real
     if (data.backspaceCount > 0 && data.mouseMovements > 10) {
-      return 'real';
+      return 'human';
     }
 
     // Default to real if no suspicious patterns detected
-    return 'real';
+    return 'human';
   }
 }

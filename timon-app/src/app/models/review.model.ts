@@ -1,22 +1,32 @@
 export interface Review {
+  _id?: string;
   id?: string;
   userId: string;
   productId: string;
   reviewText: string;
-  createdAtDisplay?: Date;
-  createdAt?: {
-    nanoseconds: number;
-    seconds: number;
-  };
-  tags: ReviewTags;
-  rating?: number; // Optional rating for the review
+  rating: number;
   behavioralData?: BehavioralDataProcessed;
+  behavioralDataRaw?: BehavioralData;
+  tags?: ReviewTags;
+  isActive?: boolean;
+  isVerified?: boolean;
+  helpfulCount?: number;
+  reportCount?: number;
+  status?: string;
+  trustScore?: number;
+  createdAt?: string | Date;
+  updatedAt?: string | Date;
+  createdAtDisplay?: Date;
 }
 
 export interface ReviewTags {
-  behavioral: 'real' | 'fake' | 'pending';
-  linguistic: 'AI' | 'human' | 'pending';
-  finalDecision: 'flagged' | 'real' | 'fake' | 'confirmed' | 'pending';
+  behavioral?: 'human' | 'suspicious' | 'pending';
+  linguistic?: 'Real' | 'Fake' | 'pending';
+  finalDecision?: 'real' | 'fake' | 'suspicious' | 'needs_review' | 'pending';
+  behavioralScore?: number;
+  behavioralReasons?: string[];
+  linguisticScore?: number;
+  analysisComplete?: boolean;
 }
 
 export interface BehavioralData {
@@ -49,14 +59,7 @@ export interface ReviewData {
   userId: string;
   productId: string;
   reviewText: string;
-  behavioralDataRaw: BehavioralData; // Raw behavioral data from the client
-  behavioralData: BehavioralDataProcessed;
-  rating?: number; // Optional rating for the review
+  behavioralDataRaw?: BehavioralData; // Raw behavioral data from the client
+  behavioralData?: BehavioralDataProcessed;
+  rating: number; // Required rating for the review
 }
-
-// export interface ReviewResponse {
-//   reviewId: string;
-//   behavioralTag: 'real' | 'fake';
-//   linguisticTag: 'AI' | 'human';
-//   finalDecision: 'flagged' | 'real' | 'fake' | 'confirmed';
-// }

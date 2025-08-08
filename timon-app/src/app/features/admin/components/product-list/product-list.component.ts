@@ -1,9 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { FirebaseService } from '../../../../services/firebase.service';
+import { ApiService } from '../../../../services/api.service';
 import { Product } from '../../../../models/product.model';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 
 @Component({
   selector: 'app-admin-product-list',
@@ -38,6 +38,8 @@ import { Observable } from 'rxjs';
                 <th>Title</th>
                 <th>Category</th>
                 <th>Price</th>
+                <th>Stock</th>
+                <th>Rating</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -49,10 +51,21 @@ import { Observable } from 'rxjs';
                 <td>{{ product.title }}</td>
                 <td>{{ product.category }}</td>
                 <td>{{ product.price | currency }}</td>
+                <td>
+                  <span [ngClass]="{'low-stock': (product.stock || 0) < 5}">
+                    {{ product.stock || 0 }}
+                  </span>
+                </td>
+                <td>
+                  <span *ngIf="product.averageRating" class="rating">
+                    {{ product.averageRating }} ({{ product.numReviews || 0 }})
+                  </span>
+                  <span *ngIf="!product.averageRating" class="no-rating">No reviews</span>
+                </td>
                 <td class="actions-cell">
-                  <button class="btn btn-sm btn-secondary" [routerLink]="['/admin/products/edit', product.id]">Edit</button>
-                  <button class="btn btn-sm btn-danger" (click)="deleteProduct(product.id)">Delete</button>
-                  <a class="btn btn-sm btn-info" [routerLink]="['/products', product.id]" target="_blank">View</a>
+                  <button class="btn btn-sm btn-secondary" [routerLink]="['/admin/products/edit', product._id || '']">Edit</button>
+                  <button class="btn btn-sm btn-danger" (click)="deleteProduct(product._id)">Delete</button>
+                  <a class="btn btn-sm btn-info" [routerLink]="['/products', product._id || '']" target="_blank">View</a>
                 </td>
               </tr>
             </tbody>
@@ -150,6 +163,21 @@ import { Observable } from 'rxjs';
       width: 200px;
     }
 
+    .low-stock {
+      color: #d93025;
+      font-weight: bold;
+    }
+
+    .rating {
+      color: #f39c12;
+      font-weight: bold;
+    }
+
+    .no-rating {
+      color: #666;
+      font-style: italic;
+    }
+
     .btn {
       padding: 0.75rem 1.5rem;
       border: none;
@@ -237,8 +265,11 @@ export class AdminProductListComponent implements OnInit {
   loading = true;
   deleteError = '';
 
-  constructor(private firebaseService: FirebaseService) {
-    this.products$ = this.firebaseService.getCollection<Product>('products');
+  constructor(private apiService: ApiService) {
+    // Get products from API and map the response to extract the products array
+    this.products$ = this.apiService.getProducts().pipe(
+      map(response => response.data.products || [])
+    );
   }
 
   ngOnInit(): void {
@@ -255,10 +286,13 @@ export class AdminProductListComponent implements OnInit {
     }
 
     if (confirm('Are you sure you want to delete this product? This action cannot be undone.')) {
-      this.firebaseService.deleteDocument('products', productId).subscribe({
+      this.apiService.deleteProduct(productId).subscribe({
         next: () => {
           this.deleteError = '';
-          // The products$ observable will automatically update
+          // Refresh the products list
+          this.products$ = this.apiService.getProducts().pipe(
+            map(response => response.data.products || [])
+          );
         },
         error: (error) => {
           this.deleteError = 'Failed to delete product. Please try again.';

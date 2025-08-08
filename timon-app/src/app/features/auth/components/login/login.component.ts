@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { FirebaseService } from '../../../../services/firebase.service';
+import { AuthService } from '../../../../services/auth.service';
 
 @Component({
   selector: 'app-login',
@@ -181,7 +181,7 @@ export class LoginComponent {
 
   constructor(
     private fb: FormBuilder,
-    private firebaseService: FirebaseService,
+    private authService: AuthService,
     private router: Router
   ) {
     this.loginForm = this.fb.group({
@@ -201,27 +201,31 @@ export class LoginComponent {
 
     const { email, password } = this.loginForm.value;
 
-    this.firebaseService.signIn(email, password).subscribe({
+    this.authService.login({ email, password }).subscribe({
       next: () => {
         this.isLoading = false;
         this.router.navigate(['/products']);
       },
       error: (error) => {
         this.isLoading = false;
-        this.errorMessage = this.getErrorMessage(error.code);
+        this.errorMessage = this.getErrorMessage(error);
       }
     });
   }
 
-  private getErrorMessage(errorCode: string): string {
-    switch (errorCode) {
-      case 'auth/user-not-found':
-      case 'auth/wrong-password':
-        return 'Invalid email or password';
-      case 'auth/too-many-requests':
-        return 'Too many unsuccessful login attempts. Please try again later.';
-      default:
-        return 'An error occurred during login. Please try again.';
+  private getErrorMessage(error: any): string {
+    if (error.error && error.error.message) {
+      return error.error.message;
     }
+    
+    if (error.status === 401) {
+      return 'Invalid email or password';
+    }
+    
+    if (error.status === 0) {
+      return 'Unable to connect to server. Please check your internet connection.';
+    }
+    
+    return 'An error occurred during login. Please try again.';
   }
 }

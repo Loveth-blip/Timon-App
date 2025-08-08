@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { FirebaseService } from '../../../../services/firebase.service';
+import { AuthService } from '../../../../services/auth.service';
 
 @Component({
   selector: 'app-signup',
@@ -15,16 +15,30 @@ import { FirebaseService } from '../../../../services/firebase.service';
 
         <form [formGroup]="signupForm" (ngSubmit)="onSubmit()" class="auth-form">
           <div class="form-group">
-            <label for="name">Full Name</label>
+            <label for="firstName">First Name</label>
             <input
               type="text"
-              id="name"
-              formControlName="name"
+              id="firstName"
+              formControlName="firstName"
               class="form-control"
-              [class.is-invalid]="name?.invalid && (name?.dirty || name?.touched)"
+              [class.is-invalid]="firstName?.invalid && (firstName?.dirty || firstName?.touched)"
             >
-            <div *ngIf="name?.invalid && (name?.dirty || name?.touched)" class="error-message">
-              <div *ngIf="name?.errors?.['required']">Name is required</div>
+            <div *ngIf="firstName?.invalid && (firstName?.dirty || firstName?.touched)" class="error-message">
+              <div *ngIf="firstName?.errors?.['required']">First name is required</div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="lastName">Last Name</label>
+            <input
+              type="text"
+              id="lastName"
+              formControlName="lastName"
+              class="form-control"
+              [class.is-invalid]="lastName?.invalid && (lastName?.dirty || lastName?.touched)"
+            >
+            <div *ngIf="lastName?.invalid && (lastName?.dirty || lastName?.touched)" class="error-message">
+              <div *ngIf="lastName?.errors?.['required']">Last name is required</div>
             </div>
           </div>
 
@@ -195,17 +209,19 @@ export class SignupComponent {
 
   constructor(
     private fb: FormBuilder,
-    private firebaseService: FirebaseService,
+    private authService: AuthService,
     private router: Router
   ) {
     this.signupForm = this.fb.group({
-      name: ['', Validators.required],
+      firstName: ['', Validators.required],
+      lastName: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(6)]]
     });
   }
 
-  get name() { return this.signupForm.get('name'); }
+  get firstName() { return this.signupForm.get('firstName'); }
+  get lastName() { return this.signupForm.get('lastName'); }
   get email() { return this.signupForm.get('email'); }
   get password() { return this.signupForm.get('password'); }
 
@@ -215,48 +231,37 @@ export class SignupComponent {
     this.isLoading = true;
     this.errorMessage = '';
 
-    const { name, email, password } = this.signupForm.value;
+    const { firstName, lastName, email, password } = this.signupForm.value;
 
-    this.firebaseService.signUp(email, password).subscribe({
-      next: (result) => {
-        // Create user document in Firestore
-        const userId = result.user.uid;
-        const userData = {
-          id: userId,
-          name,
-          email,
-          createdAt: new Date()
-        };
-
-        this.firebaseService.addDocument('users', userData).subscribe({
-          next: () => {
-            this.isLoading = false;
-            this.router.navigate(['/products']);
-          },
-          error: (error) => {
-            this.isLoading = false;
-            this.errorMessage = 'Failed to create user profile. Please try again.';
-            console.error('Error creating user document:', error);
-          }
-        });
+    this.authService.signup({ firstName, lastName, email, password }).subscribe({
+      next: () => {
+        this.isLoading = false;
+        this.router.navigate(['/products']);
       },
       error: (error) => {
         this.isLoading = false;
-        this.errorMessage = this.getErrorMessage(error.code);
+        this.errorMessage = this.getErrorMessage(error);
       }
     });
   }
 
-  private getErrorMessage(errorCode: string): string {
-    switch (errorCode) {
-      case 'auth/email-already-in-use':
-        return 'This email is already in use. Please use a different email or login.';
-      case 'auth/invalid-email':
-        return 'The email address is not valid.';
-      case 'auth/weak-password':
-        return 'The password is too weak. Please use a stronger password.';
-      default:
-        return 'An error occurred during signup. Please try again.';
+  private getErrorMessage(error: any): string {
+    if (error.error && error.error.message) {
+      return error.error.message;
     }
+    
+    if (error.status === 409) {
+      return 'This email is already in use. Please use a different email or login.';
+    }
+    
+    if (error.status === 400) {
+      return 'Please check your input and try again.';
+    }
+    
+    if (error.status === 0) {
+      return 'Unable to connect to server. Please check your internet connection.';
+    }
+    
+    return 'An error occurred during signup. Please try again.';
   }
 }

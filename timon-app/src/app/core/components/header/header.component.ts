@@ -1,8 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { FirebaseService } from '../../../services/firebase.service';
-import { User } from '@angular/fire/auth';
+import { AuthService } from '../../../services/auth.service';
+import { User } from '../../../services/api.service';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
@@ -127,8 +127,8 @@ import { map } from 'rxjs/operators';
 export class HeaderComponent implements OnInit {
   isLoggedIn$: Observable<boolean>;
 
-  constructor(private firebaseService: FirebaseService) {
-    this.isLoggedIn$ = this.firebaseService.getCurrentUser().pipe(
+  constructor(private authService: AuthService) {
+    this.isLoggedIn$ = this.authService.currentUser$.pipe(
       map(user => !!user)
     );
   }
@@ -136,6 +136,13 @@ export class HeaderComponent implements OnInit {
   ngOnInit(): void {}
 
   logout(): void {
-    this.firebaseService.signOut().subscribe();
+    this.authService.logout().subscribe({
+      next: () => {
+        console.log('Logged out successfully');
+      },
+      error: (error) => {
+        console.error('Error during logout:', error);
+      }
+    });
   }
 }

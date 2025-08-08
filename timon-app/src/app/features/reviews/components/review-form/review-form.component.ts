@@ -8,6 +8,7 @@ import {
 } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ApiService } from '../../../../services/api.service';
+import { AuthService } from '../../../../services/auth.service';
 import { BehavioralBiometricsService } from '../../../../services/behavioral-biometrics.service';
 import { Product } from '../../../../models/product.model';
 import { BehavioralData, ReviewData } from '../../../../models/review.model';
@@ -312,6 +313,7 @@ export class ReviewFormComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private apiService: ApiService,
+    private authService: AuthService,
     private behavioralService: BehavioralBiometricsService,
     private reviewAnalyzerService: ReviewAnalyzerService
   ) {
@@ -383,7 +385,14 @@ export class ReviewFormComponent implements OnInit, OnDestroy {
     this.submitting = true;
     this.submitError = '';
 
-    const userId = 'user123'; // In a real app, get this from auth service
+    const currentUser = this.authService.getCurrentUser();
+    if (!currentUser || !currentUser._id) {
+      this.submitError = 'You must be logged in to submit a review.';
+      this.submitting = false;
+      return;
+    }
+
+    const userId = currentUser._id;
     const productId = this.product?._id;
     const reviewText = this.reviewForm.value.reviewText;
     const rating = parseInt(this.reviewForm.value.rating);

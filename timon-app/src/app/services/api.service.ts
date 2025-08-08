@@ -12,7 +12,36 @@ export interface ApiResponse<T> {
     product?: T;
     reviews?: T[];
     review?: T;
+    user?: T;
   };
+}
+
+export interface AuthResponse {
+  status: string;
+  token?: string;
+  data: {
+    user?: any;
+  };
+}
+
+export interface User {
+  _id?: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  active?: boolean;
+}
+
+export interface LoginData {
+  email: string;
+  password: string;
+}
+
+export interface SignupData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
 }
 
 @Injectable({
@@ -22,6 +51,23 @@ export class ApiService {
   private baseUrl = 'http://localhost:3000/api/v1';
 
   constructor(private http: HttpClient) {}
+
+  // Authentication endpoints
+  login(loginData: LoginData): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.baseUrl}/user/login`, loginData);
+  }
+
+  signup(signupData: SignupData): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.baseUrl}/user/signup`, signupData);
+  }
+
+  isLoggedIn(): Observable<AuthResponse> {
+    return this.http.get<AuthResponse>(`${this.baseUrl}/user/isLoggedIn`);
+  }
+
+  logout(): Observable<AuthResponse> {
+    return this.http.get<AuthResponse>(`${this.baseUrl}/user/logout`);
+  }
 
   // Product endpoints
   getProducts(): Observable<ApiResponse<Product>> {

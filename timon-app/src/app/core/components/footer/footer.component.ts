@@ -10,7 +10,7 @@ import { RouterLink } from '@angular/router';
       <div class="container">
         <div class="footer-content">
           <div class="footer-section">
-            <h3>Timon</h3>
+            <h3>Timon Guard</h3>
             <p>Behavioral and Linguistic Review Analyzer</p>
           </div>
 
@@ -26,12 +26,12 @@ import { RouterLink } from '@angular/router';
 
           <div class="footer-section">
             <h4>About</h4>
-            <p>Timon enhances review authenticity by combining behavioral biometrics and linguistic forensics.</p>
+            <p>Timon Guard enhances review authenticity by combining behavioral biometrics and linguistic forensics.</p>
           </div>
         </div>
 
         <div class="footer-bottom">
-          <p>&copy; 2025 Timon. All rights reserved.</p>
+          <p>&copy; 2025 Timon Guard. All rights reserved.</p>
         </div>
       </div>
     </footer>

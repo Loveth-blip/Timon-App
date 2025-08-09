@@ -11,7 +11,7 @@ import { AuthService } from '../../../../services/auth.service';
   template: `
     <div class="auth-container">
       <div class="auth-card">
-        <h2>Login to Timon</h2>
+        <h2>Login to Timon Guard</h2>
 
         <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="auth-form">
           <div class="form-group">

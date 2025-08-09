@@ -8,7 +8,7 @@ import { RouterLink } from '@angular/router';
   template: `
     <div class="home-container">
       <div class="hero-section">
-        <h1>Welcome to Timon</h1>
+        <h1>Welcome to Timon Guard</h1>
         <p class="subtitle">Behavioral and Linguistic Review Analyzer</p>
         <p class="description">
           Enhancing review authenticity by combining behavioral biometrics and linguistic forensics.

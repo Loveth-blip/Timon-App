@@ -14,7 +14,7 @@ import { map } from 'rxjs/operators';
     <header class="header">
       <div class="container">
         <div class="logo">
-          <a routerLink="/">Timon</a>
+          <a routerLink="/">Timon Guard</a>
         </div>
 
         <nav class="nav">

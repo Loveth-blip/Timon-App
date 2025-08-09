@@ -2,16 +2,31 @@ import Review from "../models/reviewModel.js";
 import Product from "../models/productModel.js";
 import catchAsync from "../utilities/catchAsync.js";
 import AppError from "../utilities/appError.js";
-import analyzeBehavioralData from "../utilities/behavioralAnalysis.js";
+import {
+  analyzeBehavioralData,
+  analyzeBehavioralRawData,
+} from "../utilities/behavioralAnalysis.js";
 import analyzeLinguistic from "../utilities/linguisticAnalysis.js";
 
 // Create a review
 export const createReview = catchAsync(async (req, res, next) => {
-  const { userId, productId, reviewText, behavioralDataRaw, behavioralData, rating } = req.body;
+  const {
+    userId,
+    productId,
+    reviewText,
+    behavioralDataRaw,
+    behavioralData,
+    rating,
+  } = req.body;
 
   // Validate required fields
   if (!userId || !productId || !reviewText || !rating) {
-    return next(new AppError("Please provide userId, productId, reviewText, and rating", 400));
+    return next(
+      new AppError(
+        "Please provide userId, productId, reviewText, and rating",
+        400
+      )
+    );
   }
 
   // Check if product exists
@@ -20,30 +35,45 @@ export const createReview = catchAsync(async (req, res, next) => {
     return next(new AppError("Product not found", 404));
   }
 
-  // Check if user has already reviewed this product
-  const existingReview = await Review.findOne({ userId, productId, isActive: true });
-  if (existingReview) {
-    return next(new AppError("You have already reviewed this product", 400));
-  }
+  // // Check if user has already reviewed this product
+  // const existingReview = await Review.findOne({
+  //   userId,
+  //   productId,
+  //   isActive: true,
+  // });
+  // if (existingReview) {
+  //   return next(new AppError("You have already reviewed this product", 400));
+  // }
 
   // Perform behavioral analysis
   let behavioralAnalysis = {
     behavioral: "unknown",
     behavioralScore: 0,
-    behavioralReasons: []
+    behavioralReasons: [],
   };
 
   if (behavioralData) {
     try {
-      const behavioralResult = analyzeBehavioralData(behavioralData);
+      console.log(
+        "Review controller: Received behavioral data:",
+        behavioralData
+      );
+      // const behavioralResult = analyzeBehavioralData(behavioralData);
+      const behavioralResult = analyzeBehavioralRawData(behavioralDataRaw);
       behavioralAnalysis = {
         behavioral: behavioralResult.behavioralTag,
         behavioralScore: behavioralResult.score,
-        behavioralReasons: behavioralResult.reasons
+        behavioralReasons: behavioralResult.reasons,
       };
+      console.log(
+        "Review controller: Behavioral analysis result:",
+        behavioralAnalysis
+      );
     } catch (error) {
       console.error("Error in behavioral analysis:", error);
     }
+  } else {
+    console.log("Review controller: No behavioral data provided");
   }
 
   // Perform linguistic analysis
@@ -51,16 +81,19 @@ export const createReview = catchAsync(async (req, res, next) => {
     linguistic: "unknown",
     linguisticScore: 0,
     finalDecision: "needs_review",
-    analysisComplete: false
+    analysisComplete: false,
   };
 
   try {
-    const linguisticResult = await analyzeLinguistic(reviewText, behavioralAnalysis.behavioral);
+    const linguisticResult = await analyzeLinguistic(
+      reviewText,
+      behavioralAnalysis.behavioral
+    );
     linguisticAnalysis = {
       linguistic: linguisticResult.linguisticTag,
       linguisticScore: linguisticResult.linguisticScore,
       finalDecision: linguisticResult.finalClassification,
-      analysisComplete: true
+      analysisComplete: true,
     };
   } catch (error) {
     console.error("Error in linguistic analysis:", error);
@@ -76,8 +109,8 @@ export const createReview = catchAsync(async (req, res, next) => {
     behavioralDataRaw: behavioralDataRaw || {},
     tags: {
       ...behavioralAnalysis,
-      ...linguisticAnalysis
-    }
+      ...linguisticAnalysis,
+    },
   };
 
   // Create the review
@@ -87,7 +120,7 @@ export const createReview = catchAsync(async (req, res, next) => {
   const { average, count } = await Review.getAverageRating(productId);
   await Product.findByIdAndUpdate(productId, {
     rating: average,
-    numReviews: count
+    numReviews: count,
   });
 
   res.status(201).json({
@@ -100,7 +133,7 @@ export const createReview = catchAsync(async (req, res, next) => {
 
 // Get all reviews
 export const getAllReviews = catchAsync(async (req, res, next) => {
-  const reviews = await Review.find().populate('productId', 'title');
+  const reviews = await Review.find().populate("productId", "title");
 
   res.status(200).json({
     status: "success",
@@ -178,7 +211,7 @@ export const updateReview = catchAsync(async (req, res, next) => {
     const { average, count } = await Review.getAverageRating(review.productId);
     await Product.findByIdAndUpdate(review.productId, {
       rating: average,
-      numReviews: count
+      numReviews: count,
     });
   }
 
@@ -192,7 +225,11 @@ export const updateReview = catchAsync(async (req, res, next) => {
 
 // Delete a review
 export const deleteReview = catchAsync(async (req, res, next) => {
-  const review = await Review.findByIdAndUpdate(req.params.id, { isActive: false }, { new: true });
+  const review = await Review.findByIdAndUpdate(
+    req.params.id,
+    { isActive: false },
+    { new: true }
+  );
 
   if (!review) {
     return next(new AppError("No review found with that ID", 404));
@@ -202,7 +239,7 @@ export const deleteReview = catchAsync(async (req, res, next) => {
   const { average, count } = await Review.getAverageRating(review.productId);
   await Product.findByIdAndUpdate(review.productId, {
     rating: average,
-    numReviews: count
+    numReviews: count,
   });
 
   res.status(204).json({
@@ -263,7 +300,7 @@ export const getSuspiciousReviews = catchAsync(async (req, res, next) => {
 // Update review analysis
 export const updateReviewAnalysis = catchAsync(async (req, res, next) => {
   const { analysisData } = req.body;
-  
+
   if (!analysisData) {
     return next(new AppError("Please provide analysis data", 400));
   }

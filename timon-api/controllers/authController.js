@@ -117,13 +117,11 @@ export const protect = catchAsync(async (req, res, next) => {
 // Only for rendered pages and there is no error
 export const isLoggedIn = catchAsync(async (req, res, next) => {
   // console.log(req);
+  const token = req.headers.authorization?.split(" ")[1] || req.cookies.jwt;
 
-  if (req.cookies.jwt) {
+  if (token) {
     // 2) Verification of token
-    const decoded = await promisify(jwt.verify)(
-      req.cookies.jwt,
-      process.env.JWT_SECRET
-    );
+    const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
 
     // 3) Check if user still exists
     const currentUser = await User.findById(decoded.id);

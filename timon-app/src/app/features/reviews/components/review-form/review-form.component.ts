@@ -376,11 +376,20 @@ export class ReviewFormComponent implements OnInit, OnDestroy {
 
   onSubmit(): void {
     if (this.reviewForm.invalid) return;
+    console.log({
+      logid: 'onSubmit 1 💕✅‼️',
+      behavioralData: JSON.parse(JSON.stringify(this.behavioralData)),
+    });
 
     // Make sure we have behavioral data
     if (!this.behavioralData) {
       this.behavioralData = this.behavioralService.stopTracking();
     }
+
+    console.log({
+      logid: 'onSubmit 2 💕✅‼️',
+      behavioralData: JSON.parse(JSON.stringify(this.behavioralData)),
+    });
 
     this.submitting = true;
     this.submitError = '';

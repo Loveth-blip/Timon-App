@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Product } from '../models/product.model';
 import { Review, ReviewData } from '../models/review.model';
@@ -102,15 +102,31 @@ export class ApiService {
 
   // Authentication endpoints
   login(loginData: LoginData): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.baseUrl}/user/login`, loginData);
+    return this.http.post<AuthResponse>(
+      `${this.baseUrl}/user/login`,
+      loginData
+    );
   }
 
   signup(signupData: SignupData): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.baseUrl}/user/signup`, signupData);
+    return this.http.post<AuthResponse>(
+      `${this.baseUrl}/user/signup`,
+      signupData
+    );
   }
 
   isLoggedIn(): Observable<AuthResponse> {
-    return this.http.get<AuthResponse>(`${this.baseUrl}/user/isLoggedIn`);
+    let options = {
+      headers: new HttpHeaders({
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${this.getToken() || ''}`,
+      }),
+    };
+
+    return this.http.get<AuthResponse>(
+      `${this.baseUrl}/user/isLoggedIn`,
+      options
+    );
   }
 
   logout(): Observable<AuthResponse> {
@@ -231,7 +247,9 @@ export class ApiService {
   }
 
   // Purchase endpoints
-  createPurchase(purchaseData: PurchaseData): Observable<ApiResponse<Purchase>> {
+  createPurchase(
+    purchaseData: PurchaseData
+  ): Observable<ApiResponse<Purchase>> {
     return this.http.post<ApiResponse<Purchase>>(
       `${this.baseUrl}/purchase`,
       purchaseData
@@ -248,18 +266,24 @@ export class ApiService {
     );
   }
 
-  getUserPurchasesWithProducts(userId: string): Observable<PurchaseListResponse> {
+  getUserPurchasesWithProducts(
+    userId: string
+  ): Observable<PurchaseListResponse> {
     return this.http.get<PurchaseListResponse>(
       `${this.baseUrl}/purchase/user/${userId}/with-products`
     );
   }
 
   getPurchase(id: string): Observable<ApiResponse<Purchase>> {
-    return this.http.get<ApiResponse<Purchase>>(`${this.baseUrl}/purchase/${id}`);
+    return this.http.get<ApiResponse<Purchase>>(
+      `${this.baseUrl}/purchase/${id}`
+    );
   }
 
   getPurchaseWithProduct(id: string): Observable<PurchaseDetailResponse> {
-    return this.http.get<PurchaseDetailResponse>(`${this.baseUrl}/purchase/${id}/with-product`);
+    return this.http.get<PurchaseDetailResponse>(
+      `${this.baseUrl}/purchase/${id}/with-product`
+    );
   }
 
   updatePurchase(
@@ -273,6 +297,12 @@ export class ApiService {
   }
 
   deletePurchase(id: string): Observable<ApiResponse<void>> {
-    return this.http.delete<ApiResponse<void>>(`${this.baseUrl}/purchase/${id}`);
+    return this.http.delete<ApiResponse<void>>(
+      `${this.baseUrl}/purchase/${id}`
+    );
+  }
+
+  getToken(): string | null {
+    return localStorage.getItem('authToken');
   }
 }

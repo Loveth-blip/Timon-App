@@ -76,7 +76,7 @@ export class BehavioralBiometricsService {
   }
 
   private handleKeyDown = (event: KeyboardEvent): void => {
-    if (!this.isTracking) return;
+    if (!this.isTracking || event.ctrlKey || event.key === 'Control') return;
 
     const now = Date.now();
     this.keyDownTimes.push(now);

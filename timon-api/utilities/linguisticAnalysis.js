@@ -54,6 +54,11 @@ function fallbackTextAnalysis(text) {
   // Very simple heuristics (would be more sophisticated in production)
   const words = text.split(/\s+/);
 
+  // Flag presence of em dash as potentially AI-generated
+  if (text.includes("—")) {
+    return { label: "Fake", score: 0.65 };
+  }
+
   // Check for very uniform sentence lengths (AI often produces uniform text)
   const sentences = text
     .split(".")
